@@ -1,0 +1,52 @@
+
+
+model {
+
+	C <- 100000
+
+	for(i in 1:N) {
+        
+
+		ones[i] ~ dbern(p[i])
+		p[i] <- L[i]/C
+		L[i] <- Ls[i,scenario[i]]
+
+		Ls[i,1] <- ((y_s[i] / h_s)^(alpha_s - 1) * p_dth[i] / h_s) * ((y_t[i] / h_t)^(alpha_t - 1) * p_tox[i] / h_t) 
+		Ls[i,2] <- ((y_s[i] / h_s)^(alpha_s - 1) * p_dth[i] / h_s) * (1 - p_tox[i] * (y_t[i] / h_t)^alpha_t)
+		Ls[i,3] <- (1 - p_dth[i] * (y_s[i] / h_s)^alpha_s) * ((y_t[i] / h_t)^(alpha_t - 1) * p_tox[i] / h_t) 
+		Ls[i,4] <- (1 - p_dth[i] * (y_s[i] / h_s)^alpha_s) * (1 - p_tox[i] * (y_t[i] / h_t)^alpha_t) 
+
+		p_tox[i] <- 1 / (1 + exp( - (beta0t + beta1t * (dose[i] - 1)) ) );
+		p_dth[i] <- 1 - p_surv[i]
+		p_surv[i] <- 1 / (1 + exp( - (beta0s + beta1s * (dose[i] - 1) + beta2s * (dose[i] - 1)^2) ) );
+
+
+	}
+	
+	beta0t ~ dnorm(beta0t_m, beta0t_p);
+	##beta1t ~ dexp(beta1t_m);
+	##beta1t ~ dgamma(beta1t_r, beta1t_lambda);
+	beta1t ~ dnorm(beta1t_m, beta1t_p);
+
+	beta0s ~ dnorm(beta0s_m, beta0s_p);
+	##beta1s ~ dexp(beta1s_m);
+	##beta1s ~ dgamma(beta1s_r, beta1s_lambda);
+	beta1s ~ dnorm(beta1s_m, beta1s_p);
+	beta2s ~ dnorm(beta2s_m, beta2s_p);
+	##kappa ~ dunif(-1,1);
+	##kappa <- 0;
+
+	alpha_s <- 1
+	alpha_t <- 1
+
+	/* ####probability of toxicity by group###  */
+
+	for(j in 1:4) {
+
+		ps_est[j] <- 1 / (1 + exp( -(beta0s + beta1s * (j - 1) + beta2s * (j - 1)^2) ) );
+		pt_est[j] <- 1 / (1 + exp( - (beta0t + beta1t * (j - 1)) ) );
+
+
+	}
+
+}
