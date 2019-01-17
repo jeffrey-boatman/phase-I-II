@@ -1,12 +1,17 @@
 
-### Purpose: Take the survival and toxcity simulated data and obtain new estimates via cohort combining methods
+################################################################################
+
+### Purpose: Take the survival and toxcity simulated data and obtain new 
+### estimates via cohort combining methods
 
 
 
 
 ######################## POOLED ESTIMATOR FUNCTION #####################
 
-# PURPOSE: Takes the escalation data at the optimal dose and expansion data then blindly combine them to get efficient estimation for efficacy and toxicity. Although efficicent in estimation (i.e. using all the data), it may be biased.
+# PURPOSE: Takes the escalation data at the optimal dose and expansion data then 
+# blindly combine them to get efficient estimation for efficacy and toxicity. 
+# Although efficicent in estimation (i.e. using all the data), it may be biased.
 
 # INPUT: 
 ## d.esl: Escalation death data from dose escalation trial
@@ -15,7 +20,8 @@
 ## t.exp: Simulated expansion toxicity data
 
 # OUTPUT (list):
-## pool: a vector of death and toxicity indicators using both escalation and expansion data
+## pool: a vector of death and toxicity indicators using both escalation and 
+# expansion data
 
 
 Pool <- function(d.esl, d.exp, t.esl, t.exp){
@@ -27,13 +33,15 @@ Pool <- function(d.esl, d.exp, t.esl, t.exp){
 	return(pooled)
 }
 
-################################################################
-
 
 ########## Rao-Blackwell Estimator Function ##############
 
 
-# PURPOSE: To take the simulated data (Dose ESL and EXP) for efficacy and toxicity and create a permutation distribution. Then rerun it through the dose finding model and finding the average of the proportion for both efficacy and toxicity for permutations where the original optimal dose equals the newly found optimal dose (i.e. from the permutated data).
+# PURPOSE: To take the simulated data (Dose ESL and EXP) for efficacy and 
+# toxicity and create a permutation distribution. Then rerun it through the 
+# dose finding model and finding the average of the proportion for both efficacy 
+# and toxicity for permutations where the original optimal dose equals the newly 
+# found optimal dose (i.e. from the permutated data).
 
 # INPUT: 
 ## d.esl: Escalation death data from dose escalation trial
@@ -42,13 +50,16 @@ Pool <- function(d.esl, d.exp, t.esl, t.exp){
 ## t.exp: Simulated expansion toxicity data
 ## dose: Dose assignments from original dose finding model
 ## optimal_dose: Optimal dose from the dose escalation trial
-## tox_time_obs: Simulated toxicity observed time from original dose finding model
-## surv_time_obs: Simulated survival observed time from original dose finding model
+## tox_time_obs: Simulated toxicity observed time from original dose 
+##  finding model
+## surv_time_obs: Simulated survival observed time from original dose 
+##  finding model
 
 # OUTPUT: 
 ## Conditional UMVUE E[x|(permuted) expansion cohort*] for survival and toxicity
 
-RaoBlackwell <- function(d.esl, d.exp, t.esl, t.exp, dose, optimal_dose, tox_time_obs, surv_time_obs){
+RaoBlackwell <- function(d.esl, d.exp, t.esl, t.exp, dose, optimal_dose, 
+  tox_time_obs, surv_time_obs){
 
 	# Length of death & toxicity indicators for the optimal_dose
 	m <- length(d.esl[dose == optimal_dose])
@@ -57,14 +68,17 @@ RaoBlackwell <- function(d.esl, d.exp, t.esl, t.exp, dose, optimal_dose, tox_tim
 	d.all <- c(d.esl[dose == optimal_dose], d.exp)
 	t.all <- c(t.esl[dose == optimal_dose], t.exp)
 	
-	# Of all possible permutations of death indicator, a random sample (of size q) of the combined escalation & expansion
+	# Of all possible permutations of death indicator, a random sample (of size q) 
+	# of the combined escalation & expansion
 	# is taken of size (m + expansion size)
 	q <- 100
 	d.perm <- t(replicate(n = q, d.all[sample(1:length(d.all), replace=FALSE)]))
 	t.perm <- t(replicate(n = q, t.all[sample(1:length(t.all), replace=FALSE)]))
 	
-	## Non-parametric Bootsrap: We will resample each permutation with replacement from the observed data from 
-	## both the escalation trial and follow-up cohort. The quantiles for the distribution will be used for CI
+	## Non-parametric Bootsrap: We will resample each permutation with replacement 
+	## from the observed data from 
+	## both the escalation trial and follow-up cohort. The quantiles for the 
+	## distribution will be used for CI
 	# d.npb <- lapply(1:q, function(i) replicate(n = q, d.perm[i,][sample(1:length(d.perm[i,]), replace = TRUE)]))
 	# t.npb <- lapply(1:q, function(i) replicate(n = q, t.perm[i,][sample(1:length(t.perm[i,]), replace = TRUE)]))
 	# cov <- matrix(NA, ncol = 4, nrow = q)
@@ -111,22 +125,25 @@ RaoBlackwell <- function(d.esl, d.exp, t.esl, t.exp, dose, optimal_dose, tox_tim
 	return(RB.est)
 }
 
-################################################################
 
 
-#################### DOSE FINDING ALGORITHM FOR PERMUTATION FUNCTION ########################
+####### DOSE FINDING ALGORITHM FOR PERMUTATION FUNCTION #################
 
-# PURPOSE: To be used in PERM function to find new optimal dose, d* from permuted data
+# PURPOSE: To be used in PERM function to find new optimal dose, d* from 
+# permuted data
 
 # INPUT:
 ## death: New permuted escalation death vector
 ## tox: New permuted escalation toxicity vector
 ## dose: Dose assignments from original dose finding model
-## tox_time_obs: Simulated toxicity observed time from original dose finding model
-## surv_time_obs: Simulated survival observed time from original dose finding model
+## tox_time_obs: Simulated toxicity observed time from original 
+##   dose finding model
+## surv_time_obs: Simulated survival observed time from original dose 
+##   finding model
 
 # OUTPUT: 
-## optimal_dose.perm: a vector of new Optimal dose based on the permuted surivial and toxicity data
+## optimal_dose.perm: a vector of new Optimal dose based on the permuted 
+## surivial and toxicity data
 
 DOSE.MODEL <- function(death, tox, dose, tox_time_obs, surv_time_obs) {
 		# Set total subjects to 21 subjects
@@ -195,7 +212,7 @@ DOSE.MODEL <- function(death, tox, dose, tox_time_obs, surv_time_obs) {
 }
 
 
-#####################################################
+
 
 
 ###################### BETA COMMENSURATE PRIOR ESTIMATOR FUNCTION ###########################
@@ -260,13 +277,13 @@ BetaComP <- function(d.esl, d.exp, t.esl, t.exp, optimal_dose, dose, surv_time_o
 }
 
 
-#####################################################
 
 
 
-############################## GRAND ESTIMATOR FUNCTION ###################################
+############## GRAND ESTIMATOR FUNCTION #############################
 
-# PURPOSE: To obtain the necessary estimators (expansion only, pooled, Rao-Blackwell, beta commensurate prior, and MEM model estimates). 
+# PURPOSE: To obtain the necessary estimators (expansion only, pooled, 
+# Rao-Blackwell, beta commensurate prior, and MEM model estimates). 
 
 # INPUT:
 ## d.esl: Escalation death data from dose escalation trial
@@ -275,19 +292,23 @@ BetaComP <- function(d.esl, d.exp, t.esl, t.exp, optimal_dose, dose, surv_time_o
 ## t.exp: Simulated expansion toxicity data
 ## optimal_dose: Optimal dose from the dose escalation trial
 ## dose: Dose assignments from original dose finding model
-## tox_time_obs: Simulated toxicity observed time from original dose finding model
-## surv_time_obs: Simulated survival observed time from original dose finding model
+## tox_time_obs: Simulated toxicity observed time from original 
+##  dose finding model
+## surv_time_obs: Simulated survival observed time from original 
+##  dose finding model
 
 # OUTPUT: 
 ## optimal_dose: Optimal dose from the dose escalation trial
 ## dec: Dose expansion survival and toxicity estimates
-## pooled: Dose escalation and dose expansion combined survival and toxicity estimates
+## pooled: Dose escalation and dose expansion combined survival and 
+##   toxicity estimates
 ## rb.est: Rao Blackwell survival and toxicity estimates
 ## bc.est: Beta Commensurate prior survival and toxicity estimates
 ## esl.est: Dose escalation survival and toxicity estimates
 ## mb.est: Model-based survival and toxicity estimates
 
-ESTIMATORS <- function(d.esl, d.exp, t.esl, t.exp, optimal_dose, dose, surv_time_obs, tox_time_obs, mb){
+ESTIMATORS <- function(d.esl, d.exp, t.esl, t.exp, optimal_dose, dose, 
+  surv_time_obs, tox_time_obs, mb){
 	
 	if (optimal_dose != 0){
 		# EXPANSION ESTIMATES ONLY
@@ -333,21 +354,24 @@ ESTIMATORS <- function(d.esl, d.exp, t.esl, t.exp, optimal_dose, dose, surv_time
 
 
 
-#####################################################
 
-############################# Estimator Results Function ###################################
 
-# PURPOSE: To take each simulated scenario and obtain the necessary estimators (expansion only, pooled, Rao-Blackwell, beta commensurate prior, etc.) with different types of inter-trial heterogeneity.
+########## Estimator Results Function #####
+
+# PURPOSE: To take each simulated scenario and obtain the 
+# necessary estimators (expansion only, pooled, Rao-Blackwell, 
+# beta commensurate prior, etc.) with different types of 
+# inter-trial heterogeneity.
 
 # INPUT:
 ## sim.results: Simulated results from SurvEffTox
 ## n_sim: Number of simulations
 
 # OUTPUT: 
-## output1: Survival and toxcity esimates for each combining method assuming no inter-trial heterogeneity
-## output2: Survival and toxcity esimates for each combining method assuming lower inter-trial heterogeneity
-## output3: Survival and toxcity esimates for each combining method assuming upper inter-trial heterogeneity
-## output4: Survival and toxcity esimates for each combining method assuming random inter-trial heterogeneity
+## output1: no inter-trial heterogeneity
+## output2: lower inter-trial heterogeneity
+## output3: upper inter-trial heterogeneity
+## output4: random inter-trial heterogeneity
 
 EstiResults <- function(sim_results, n_sim = 1000){
 	
@@ -381,7 +405,7 @@ EstiResults <- function(sim_results, n_sim = 1000){
 }
 
 
-#################################################################
+
 
 
 
@@ -404,7 +428,7 @@ n_sim <- 1000
 ###indicator of whether or not outcomes are treated as time-to-event variables###
 ###all_data = 0 implies time-to-event, all_data = 1 implies binary outcomes###
 
-all_data <- 0
+all_data <- 1
 
 ###maximum sample size/cohorts###
 
@@ -445,7 +469,8 @@ true.prob <- function(case){
 	pt <- round(inv.logit(b0t + b1t*0:3), 2)
 	ps <- round(inv.logit(b0s + b1s*0:3), 2)
 	
-return(list(pt = pt, ps = ps))
+  out <- list(pt = pt, ps = ps)
+  out
 }
 
 ###true probabilities of efficacy and toxicity###
@@ -485,7 +510,7 @@ pt_star <- .40
 
 gatekeeper <- .05
 
-###hyperparameters###
+# ~~~ hyperparameters ~~~ ----
 
 ###mean hyperparameters###
 
@@ -524,9 +549,7 @@ beta2s_p <- 1/(beta2s_s^2)
 ###calculate p using contour propossed by Thall and Cook###
 
 find_p <- function(p) {
-
-return( ( ((1 - ps_star)/(1 - ps_min))^p + (pt_star/pt_max)^p - 1)^2 )
-
+  (((1 - ps_star) / (1 - ps_min)) ^ p + (pt_star / pt_max) ^ p - 1) ^ 2 
 }
 
 p <- optimize(find_p, c(-100,100))$minimum
@@ -534,34 +557,41 @@ p <- optimize(find_p, c(-100,100))$minimum
 
 calc_dist <- function(ps, pt) {
 
-dist <- 1 - ( ((1 - ps)/(1 - ps_min))^p + (pt/pt_max)^p )^(1/p)
+  dist <- 1 - (((1 - ps) / (1 - ps_min)) ^ p + (pt / pt_max) ^ p ) ^ (1 / p)
 
-return(dist)
+  dist
 
 }
 
 
 
 
-##################################################################
+
 
 
 # Calculate the new estimators (i.e. pooled, Rao Blackwell, Beta Commensurate Prior, etc.) from the 
 # EffTox Simulated data from the four cases 
 
-load('~/Desktop/EffToxSIM/Simulated Data/sim_results1.RData')
+# ~~~ for debugging ~~~ ----
+# debug(EstiResults)
+# debug(Pool)
+# debug(DOSE.MODEL)
+# debug(BetaComP)
+# debug(ESTIMATORS)
+
+load('RData/sim_results1.RData')
 output1 <- EstiResults(sim_results1)
 save(output1, file = "output1.RData")
 
-load('~/Desktop/EffToxSIM/Simulated Data/sim_results2.RData')
+load('RData/sim_results2.RData')
 output2 <- EstiResults(sim_results2)
 save(output2, file = "output2.RData")
 
-load('~/Desktop/EffToxSIM/Simulated Data/sim_results3.RData')
+load('RData/sim_results3.RData')
 output3 <- EstiResults(sim_results3)
 save(output3, file = "output3.RData")
 
-load('~/Desktop/EffToxSIM/Simulated Data/sim_results4.RData')
+load('RData/sim_results4.RData')
 output4 <- EstiResults(sim_results4)
 save(output4, file = "output4.RData")
 
