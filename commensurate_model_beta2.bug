@@ -1,92 +1,46 @@
+model {
 
-
-model{
-
-	#### PREVIOUS DOSE ESCALATION MODEL###
-	C <- 100000
-
-	for(i in 1:N) {
-        
-
-		ones[i] ~ dbern(p[i])
-		p[i] <- L[i]/C
-		L[i] <- Ls[i,scenario[i]]
-
-		Ls[i,1] <- ((y_s[i] / h_s)^(alpha_s - 1) * p_dth[i] / h_s) * ((y_t[i] / h_t)^(alpha_t - 1) * p_tox[i] / h_t) 
-		Ls[i,2] <- ((y_s[i] / h_s)^(alpha_s - 1) * p_dth[i] / h_s) * (1 - p_tox[i] * (y_t[i] / h_t)^alpha_t)
-		Ls[i,3] <- (1 - p_dth[i] * (y_s[i] / h_s)^alpha_s) * ((y_t[i] / h_t)^(alpha_t - 1) * p_tox[i] / h_t)
-		Ls[i,4] <- (1 - p_dth[i] * (y_s[i] / h_s)^alpha_s) * (1 - p_tox[i] * (y_t[i] / h_t)^alpha_t) 
-
-		p_tox[i] <- 1 / (1 + exp( - (beta0t + beta1t * (dose[i] - 1)) ) );
-		p_dth[i] <- 1 - p_surv[i]
-		p_surv[i] <- 1 / (1 + exp( - (beta0s + beta1s * (dose[i] - 1) + beta2s * (dose[i] - 1)^2) ) );
-
-
-	}
+  for(ii in 1:n_esc) {
+    
+	y_t_esc[ii] ~ dbern(p_t_esc[ii])
+	y_s_esc[ii] ~ dbern(p_s_esc[ii])
 	
-	beta0t ~ dnorm(beta0t_m, beta0t_p);
-	##beta1t ~ dexp(beta1t_m);
-	##beta1t ~ dgamma(beta1t_r, beta1t_lambda);
-	beta1t ~ dnorm(beta1t_m, beta1t_p);
+	p_t_esc[ii] <- 1 / (1 + exp(-(beta_0T + beta_1T * (dose[ii] - 1))))
+	p_s_esc[ii] <- 1 / (1 + exp(-(beta_0E + beta_1E * (dose[ii] - 1) + beta_2E * (dose[ii] - 1) ^ 2)))
+	
+  }
+  
+  beta_0T ~ dnorm(beta0_muT, beta0_tauT);
+  beta_1T ~ dnorm(beta1_muT, beta1_tauT);
 
-	beta0s ~ dnorm(beta0s_m, beta0s_p);
-	##beta1s ~ dexp(beta1s_m);
-	##beta1s ~ dgamma(beta1s_r, beta1s_lambda);
-	beta1s ~ dnorm(beta1s_m, beta1s_p);
-	beta2s ~ dnorm(beta2s_m, beta2s_p);
-	##kappa ~ dunif(-1,1);
-	##kappa <- 0;
+  beta_0E ~ dnorm(beta0_muE, beta0_tauE);
+  beta_1E ~ dnorm(beta1_muE, beta1_tauE);
+  beta_2E ~ dnorm(beta2_muE, beta2_tauE);
+  
+  y_t_exp ~ dbin(tox, n_exp)
+  y_s_exp ~ dbin(eff, n_exp)
+  
+  tox ~ dbeta(a_tox, b_tox)
+  eff ~ dbeta(a_eff, b_eff)
+  
+  mu_tox <- 1 / (1 + exp(-(beta_0T + beta_1T * (optimal_dose - 1))))
+  mu_eff <- 1 / (1 + exp(-(beta_0E + beta_1E * (optimal_dose - 1) + beta_2E * (optimal_dose - 1) ^ 2)))
+  
+  a_tox <- (1 - gamma_tox ^ 2) * mu_tox / gamma_tox ^ 2
+  b_tox <- (1 - gamma_tox ^ 2) * (1 - mu_tox) / gamma_tox ^ 2 
+  
+  a_eff <- (1 - gamma_eff ^ 2) * mu_eff / gamma_eff ^ 2
+  b_eff <- (1 - gamma_eff ^ 2) * (1 - mu_eff) / gamma_eff ^ 2
 
-	alpha_s <- 1
-	alpha_t <- 1
+  gamma_tox <- 1 / tautox
+  gamma_eff <- 1 / taueff 
+  
+  tautox <- tau_temtox * step(u_tox - tau_temtox) + spike_tox * step(tau_temtox - u_tox)
+  d_tox <- (u_tox - 1) / nu_tox + 1
+  tau_temtox ~ dunif(1, d_tox)
 
-	/* ####probability of toxicity by group###  */
-
-	for(j in 1:4) {
-
-		ps_est[j] <- 1 / (1 + exp( -(beta0s + beta1s * (j - 1) + beta2s * (j - 1)^2) ) );
-		pt_est[j] <- 1 / (1 + exp( - (beta0t + beta1t * (j - 1)) ) );
-
-
-	}
-		
-	#########################
-	
-	##### Beta commensurate prior for current data
-	
-	
- 	for(q in 1:N2){ 
-  		surv.exp[q] ~ dbern(exp_eff) 
-  		tox.exp[q] ~ dbern(exp_tox)
- 	}
-
-	exp_eff ~ dbeta(a_eff, b_eff)
-	exp_tox ~ dbeta(a_tox, b_tox)
-	
-	# reparamterization of the shape parameters for the beta distribution
-	a_eff <- (1 - K.e^2) * mu.eff / (K.e^2) 
-	b_eff <- (1 - K.e^2) * (1 - mu.eff) / (K.e^2)
-	
-	a_tox <- (1 - K.t^2) * mu.tox / (K.t^2) 
-	b_tox <- (1 - K.t^2) * (1 - mu.tox) / (K.t^2)
-	
-	# mu represents the mean of the distribution
-	mu.eff <- ps_est[op_dose]
-	mu.tox <- pt_est[op_dose]
-	
-	# K denotes the variance in terms of the proportion of the max variance given mu
-	# Serves as the commensurability parameter
-	
-	K.t <- 1/tau.t
-	
-	tau.t <- tau.t.*step( u.slab.t - tau.t.) + spike.t* step( tau.t. - u.slab.t)
-	D.t <- ( u.slab.t - l.slab.t)/v.t + l.slab.t
-	tau.t. ~ dunif(l.slab.t,D.t)
-	
-	K.e <- 1/tau.e
-	
-	tau.e <- tau.e1*step( u.slab.e - tau.e1) + spike.e* step( tau.e1 - u.slab.e)
-	D.e <- ( u.slab.e - l.slab.e)/v.e + l.slab.e
-	tau.e1 ~ dunif(l.slab.e,D.e)
-
+  taueff <- tau_temeff * step(u_eff - tau_temeff) + spike_eff * step(tau_temeff - u_eff)
+  d_eff <- (u_eff - 1) / nu_eff + 1
+  tau_temeff ~ dunif(1, d_eff)
+  
 }

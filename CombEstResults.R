@@ -58,6 +58,16 @@ Pool <- function(d.esl, d.exp, t.esl, t.exp){
 # OUTPUT: 
 ## Conditional UMVUE E[x|(permuted) expansion cohort*] for survival and toxicity
 
+# ~~~ for debugging UMVUE estimator ~~~ ----
+set.seed(1)
+d.esl <- rbinom(21, 1, 0.2)
+d.exp <- rbinom(20, 1, 0.2)
+t.esl <- rbinom(21, 1, 0.35)
+t.exp <- rbinom(20, 1, 0.35)
+optimal_dose <- 2
+surv_time_obs <- d.esl * rbeta(21, 1, 1) * 24 + (1 - d.esl) * 24 
+tox_time_obs  <- t.esl * rbeta(21, 1, 1) *  4 + (1 - t.esl) *  4
+
 RaoBlackwell <- function(d.esl, d.exp, t.esl, t.exp, dose, optimal_dose, 
   tox_time_obs, surv_time_obs){
 
@@ -159,13 +169,32 @@ DOSE.MODEL <- function(death, tox, dose, tox_time_obs, surv_time_obs) {
 		while(jags_works == 0) {
 
 			jags_mod <- try(jags.model(	'survEffTox_revision_unif2.bug', 
-								data = list('scenario' = scenario[1:total_subjects], 'dose' = dose[1:total_subjects], 'N' = total_subjects,
-								'y_s' = surv_time_obs[1:total_subjects], 'h_s' = surv_T, 'y_t' = tox_time_obs[1:total_subjects], 'h_t' = tox_T,  
-								'beta0t_m' = beta0t_m, 'beta1t_m' = beta1t_m, 'beta0s_m' = beta0s_m, 'beta1s_m' = beta1s_m, 'beta2s_m' = beta2s_m, 
-								'beta0t_p' = beta0t_p, 'beta1t_p' = beta1t_p, 'beta0s_p' = beta0s_p, 'beta1s_p' = beta1s_p, 
-								'beta2s_p' = beta2s_p, 'ones' = rep(1, total_subjects)),
-								init = list('beta0t' = -2, 'beta1t' = 1, 'beta0s' = -1, 'beta1s' = 1, 'beta2s' = 0),
-								n.chains = 1, quiet = TRUE))
+        data = list(
+          'scenario' = scenario[1:total_subjects], 
+          'dose'     = dose[1:total_subjects], 
+          'N'        = total_subjects,
+          'y_s'      = surv_time_obs[1:total_subjects], 
+          'h_s'      = surv_T, 
+          'y_t'      = tox_time_obs[1:total_subjects], 
+          'h_t'      = tox_T,  
+          'beta0t_m' = beta0t_m, 
+          'beta1t_m' = beta1t_m, 
+          'beta0s_m' = beta0s_m, 
+          'beta1s_m' = beta1s_m, 
+          'beta2s_m' = beta2s_m, 
+          'beta0t_p' = beta0t_p, 
+          'beta1t_p' = beta1t_p, 
+          'beta0s_p' = beta0s_p, 
+          'beta1s_p' = beta1s_p, 
+          'beta2s_p' = beta2s_p, 
+          'ones' = rep(1, total_subjects)),
+        init = list(
+          'beta0t' = -2, 
+          'beta1t' =  1, 
+          'beta0s' = -1, 
+          'beta1s' =  1, 
+          'beta2s' =  0),
+        n.chains = 1, quiet = TRUE))
 
 			jags_works <- 1*(length(jags_mod) > 1 | attempt == 10)
 
@@ -248,20 +277,53 @@ BetaComP <- function(d.esl, d.exp, t.esl, t.exp, optimal_dose, dose, surv_time_o
 		N2 <- dec_n
 		while(jags_works == 0) {
 		
-			comensurate_data <- list('op_dose' =  optimal_dose, 'v.e' = 0.5, 'l.slab.e' = 1, 'u.slab.e' = 4, 'spike.e' = 400, 'v.t' = 0.5, 'l.slab.t' = 1, 'u.slab.t' = 2.25, 'spike.t' = 100, 'N2' = N2, 'surv.exp'=1-d.exp, 'tox.exp'=t.exp, 'scenario' = scenario[1:total_subjects], 'dose' = dose[1:total_subjects], 'N' = total_subjects, 'y_s' = surv_time_obs[1:total_subjects], 'h_s' = surv_T, 'y_t' = tox_time_obs[1:total_subjects], 'h_t' = tox_T, 'beta0t_m' = beta0t_m, 'beta1t_m' = beta1t_m, 'beta0s_m' = beta0s_m, 'beta1s_m' = beta1s_m, 'beta2s_m' = beta2s_m, 'beta0t_p' = beta0t_p, 'beta1t_p' = beta1t_p, 'beta0s_p' = beta0s_p, 'beta1s_p' = beta1s_p,'beta2s_p' = beta2s_p, 'ones' = rep(1, total_subjects))
+			comensurate_data <- list(
+        'optimal_dose' = optimal_dose, 
+        'nu_eff'       = 0.5, 
+        'u_eff'        = 4, 
+        'spike_eff'    = 400, 
+        'nu_tox'       = 0.5, 
+        'u_tox'        = 2.25, 
+        'spike_tox'    = 100, 
+        # 'tox'          = t.exp, 
+        'dose'         = dose, 
+        'n_esc'        = total_subjects, 
+			  'n_exp'        = dec_n,
+        'y_s_esc'      = 1 - d.esl, 
+        'y_t_esc'      = t.esl, 
+			  'y_s_exp'      = sum(1 - d.exp),
+			  'y_t_exp'      = sum(t.exp),
+        'beta0_muT'    = beta0t_m, 
+        'beta1_muT'    = beta1t_m, 
+        'beta0_muE'    = beta0s_m, 
+        'beta1_muE'    = beta1s_m, 
+        'beta2_muE'    = beta2s_m, 
+        'beta0_tauT'   = beta0t_p, 
+        'beta1_tauT'   = beta1t_p, 
+        'beta0_tauE'   = beta0s_p, 
+        'beta1_tauE'   = beta1s_p,
+        'beta2_tauE'   = beta2s_p)
 		
-			jags_mod.2 <- try(jags.model('commensurate_model_beta2.bug', data = comensurate_data,init = list('beta0t' = -2, 'beta1t' = 1, 'beta0s' = -1, 'beta1s' = 1, 'beta2s' = 0),
-									n.chains = 1, quiet = TRUE))
+			jags_mod.2 <- try(jags.model('commensurate_model_beta2.bug', 
+			  data = comensurate_data,
+			  init = list(
+			    'beta_0T' = -2, 
+			    'beta_1T' =  1, 
+			    'beta_0E' = -1, 
+			    'beta_1E' =  1, 
+			    'beta_2E' =  0),
+				n.chains = 1, quiet = TRUE))
 		
 			jags_works <- 1*(length(jags_mod.2) > 1 | attempt == 10)
 		
 			attempt <- attempt + 1
 	
-			}
+		}
 		
 		update(jags_mod.2, 4000, quiet = TRUE)
 		
-		coda_samples_temp.2 <- coda.samples(jags_mod.2, c('exp_eff', 'exp_tox'),1000, quiet = TRUE)
+		coda_samples_temp.2 <- coda.samples(jags_mod.2, c('eff', 'tox'), 1000, 
+		  quiet = TRUE)
 		coda_samples.2 <- coda_samples_temp.2[[1]]
 		
 		# Beta Commensurate prior data
@@ -338,7 +400,16 @@ ESTIMATORS <- function(d.esl, d.exp, t.esl, t.exp, optimal_dose, dose,
 		mb.est <- mb
 		
 		# MEM MODEL ESTIMATES
-		#mem.mat <- sapply(seq(0.01, 1, by = 0.01), function(i) MEM.data(1-d.esl,1-d.exp, t.esl, t.exp, dose, optimal_dose,i))
+		# mem.mat <- sapply(seq(0.01, 1, by = 0.01), function(i) MEM.data(1-d.esl,1-d.exp, t.esl, t.exp, dose, optimal_dose,i))
+		mem <- calc_MEM(
+		  optimal_dose = optimal_dose,
+		  eff_esc      = 1 - d.esl,
+		  tox_esc      = t.esl,
+		  dose_esc     = dose,
+		  eff_exp      = 1 -d.exp,
+		  tox_exp      = t.exp,
+		  dose_exp     = rep(optimal_dose, length(t.exp))
+		)
 	} else {
 		dec <- rep(NA, 6)
 		pooled <- rep(NA, 6)
@@ -347,9 +418,11 @@ ESTIMATORS <- function(d.esl, d.exp, t.esl, t.exp, optimal_dose, dose,
 		esl.est <- rep(NA, 6)
 		mb.est <- rep(NA, 6)
 		#mem.mat <- matrix(NA, ncol = 100, nrow = 2)
+		mem <- rep(NA, 6)
 	}
-	return(c(optimal_dose, dec, pooled, rb.est, bc.est, esl.est, mb.est))
-	
+	# return(c(optimal_dose, dec, pooled, rb.est, bc.est, esl.est, mb.est, mem))
+	out <- c(optimal_dose, dec, pooled, rb.est, bc.est, esl.est, mb.est, mem)
+	out
 }
 
 
@@ -401,7 +474,9 @@ EstiResults <- function(sim_results, n_sim = 1000){
 	
 	# output4 <- sapply(1:n_sim, function(i) ESTIMATORS(d.esl[,i], d.exp4[,i], t.esl[,i], t.exp4[,i], optimal_dose[i], dose[,i], surv_time_obs[,i], tox_time_obs[,i], mb[,i]))
 	
-	return(list(output1 = output1, output2 = output2))
+	out <- list(output1 = output1, output2 = output2)
+	
+	out
 }
 
 
@@ -575,25 +650,32 @@ calc_dist <- function(ps, pt) {
 # ~~~ for debugging ~~~ ----
 # debug(EstiResults)
 # debug(Pool)
-# debug(DOSE.MODEL)
+# debug(RaoBlackwell)
+# debugonce(DOSE.MODEL)
 # debug(BetaComP)
 # debug(ESTIMATORS)
 
+source("mem-functions.R")
+# debug(calc_MEM)
+# debug(eff_post_fun)
+# debug(tox_post_fun)
+
+
 load('RData/sim_results1.RData')
 output1 <- EstiResults(sim_results1)
-save(output1, file = "output1.RData")
+save(output1, file = "Rdata/output1.RData")
 
 load('RData/sim_results2.RData')
 output2 <- EstiResults(sim_results2)
-save(output2, file = "output2.RData")
+save(output2, file = "Rdata/output2.RData")
 
 load('RData/sim_results3.RData')
 output3 <- EstiResults(sim_results3)
-save(output3, file = "output3.RData")
+save(output3, file = "Rdata/output3.RData")
 
 load('RData/sim_results4.RData')
 output4 <- EstiResults(sim_results4)
-save(output4, file = "output4.RData")
+save(output4, file = "Rdata/output4.RData")
 
 
 
