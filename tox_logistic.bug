@@ -1,0 +1,17 @@
+model {
+
+  for(ii in 1:n) {
+    
+	tox[ii] ~ dbern(p_t[ii])
+	
+	p_t[ii] <- 1 / (1 + exp(-(beta_0T + beta_1T * (dose[ii] - 1))))
+	
+  }
+      
+  beta_0T ~ dnorm(beta0_muT, beta0_tauT)
+  beta_1T ~ dnorm(beta1_muT, beta1_tauT)
+  # beta_1T ~ dgamma(beta1_shapeT, beta1_rateT)
+  
+  p_tox <- 1 / (1 + exp(-(beta_0T + beta_1T * (optimal_dose - 1))))
+    
+}

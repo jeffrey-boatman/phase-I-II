@@ -1,0 +1,18 @@
+model {
+
+  for(ii in 1:n) {
+    
+	eff[ii] ~ dbern(p_s[ii])
+	
+	p_s[ii] <- 1 / (1 + exp(-(beta_0E + beta_1E * (dose[ii] - 1) + beta_2E * (dose[ii] - 1) ^ 2)))
+	
+  }
+      
+  beta_0E ~ dnorm(beta0_muE, beta0_tauE)
+  beta_1E ~ dnorm(beta1_muE, beta1_tauE)
+  # beta_1E ~ dgamma(beta1_shapeE, beta1_rateE)
+  beta_2E ~ dnorm(beta2_muE, beta2_tauE)
+  
+  p_eff <- 1 / (1 + exp(-(beta_0E + beta_1E * (optimal_dose - 1) + beta_2E * (optimal_dose - 1) ^ 2)))
+    
+}

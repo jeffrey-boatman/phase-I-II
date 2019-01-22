@@ -224,11 +224,23 @@ DEC <- function(optimal_dose, case){
 		t3 <- rbinom(n = dec_n, size = 1, prob = pt.upr)
 		t4 <- rbinom(n = dec_n, size = 1, prob = pt.ith)
 		
+		tox_time_obs1 <- tox_T * (t1 * beta(dec_n, 1, 1) + (1 - t1))
+		tox_time_obs2 <- tox_T * (t2 * beta(dec_n, 1, 1) + (1 - t2))
+		tox_time_obs3 <- tox_T * (t3 * beta(dec_n, 1, 1) + (1 - t3))
+		tox_time_obs4 <- tox_T * (t4 * beta(dec_n, 1, 1) + (1 - t4))
+		
 		# Sampling 20 subjects death status based on true values of the optimal dose
 		d1 <- 1 - rbinom(n = dec_n, size = 1, prob = ps)
 		d2 <- 1 - rbinom(n = dec_n, size = 1, prob = ps.lwr)
 		d3 <- 1 - rbinom(n = dec_n, size = 1, prob = ps.upr)
 		d4 <- 1 - rbinom(n = dec_n, size = 1, prob = ps.ith)
+		
+		# !!!! here !!!! ----
+		surv_time_obs1 <- survT * (d1 * rbeta(dec_n, 1, 1) + (1 - d1))
+		surv_time_obs2 <- survT * (d2 * rbeta(dec_n, 1, 1) + (1 - d2))
+		surv_time_obs3 <- survT * (d3 * rbeta(dec_n, 1, 1) + (1 - d3))
+		surv_time_obs4 <- survT * (d4 * rbeta(dec_n, 1, 1) + (1 - d4))
+		
 		} else {
 			d1 = t1 = d2 = t2  = d3 = t3 = d4 = t4 = rep(NA, dec_n)
 			ps.lwr = pt.lwr = ps.upr = pt.upr = ps.ith = pt.ith = NA

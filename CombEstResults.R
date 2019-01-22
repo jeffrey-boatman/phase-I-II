@@ -58,6 +58,16 @@ Pool <- function(d.esl, d.exp, t.esl, t.exp){
 # OUTPUT: 
 ## Conditional UMVUE E[x|(permuted) expansion cohort*] for survival and toxicity
 
+# ~~~ for debugging UMVUE estimator ~~~ ----
+set.seed(1)
+d.esl <- rbinom(21, 1, 0.2)
+d.exp <- rbinom(20, 1, 0.2)
+t.esl <- rbinom(21, 1, 0.35)
+t.exp <- rbinom(20, 1, 0.35)
+optimal_dose <- 2
+surv_time_obs <- d.esl * rbeta(21, 1, 1) * 24 + (1 - d.esl) * 24 
+tox_time_obs  <- t.esl * rbeta(21, 1, 1) *  4 + (1 - t.esl) *  4
+
 RaoBlackwell <- function(d.esl, d.exp, t.esl, t.exp, dose, optimal_dose, 
   tox_time_obs, surv_time_obs){
 
@@ -390,7 +400,16 @@ ESTIMATORS <- function(d.esl, d.exp, t.esl, t.exp, optimal_dose, dose,
 		mb.est <- mb
 		
 		# MEM MODEL ESTIMATES
-		#mem.mat <- sapply(seq(0.01, 1, by = 0.01), function(i) MEM.data(1-d.esl,1-d.exp, t.esl, t.exp, dose, optimal_dose,i))
+		# mem.mat <- sapply(seq(0.01, 1, by = 0.01), function(i) MEM.data(1-d.esl,1-d.exp, t.esl, t.exp, dose, optimal_dose,i))
+		mem <- calc_MEM(
+		  optimal_dose = optimal_dose,
+		  eff_esc      = 1 - d.esl,
+		  tox_esc      = t.esl,
+		  dose_esc     = dose,
+		  eff_exp      = 1 -d.exp,
+		  tox_exp      = t.exp,
+		  dose_exp     = rep(optimal_dose, length(t.exp))
+		)
 	} else {
 		dec <- rep(NA, 6)
 		pooled <- rep(NA, 6)
@@ -399,9 +418,11 @@ ESTIMATORS <- function(d.esl, d.exp, t.esl, t.exp, optimal_dose, dose,
 		esl.est <- rep(NA, 6)
 		mb.est <- rep(NA, 6)
 		#mem.mat <- matrix(NA, ncol = 100, nrow = 2)
+		mem <- rep(NA, 6)
 	}
-	return(c(optimal_dose, dec, pooled, rb.est, bc.est, esl.est, mb.est))
-	
+	# return(c(optimal_dose, dec, pooled, rb.est, bc.est, esl.est, mb.est, mem))
+	out <- c(optimal_dose, dec, pooled, rb.est, bc.est, esl.est, mb.est, mem)
+	out
 }
 
 
@@ -633,6 +654,12 @@ calc_dist <- function(ps, pt) {
 # debugonce(DOSE.MODEL)
 # debug(BetaComP)
 # debug(ESTIMATORS)
+
+source("mem-functions.R")
+# debug(calc_MEM)
+# debug(eff_post_fun)
+# debug(tox_post_fun)
+
 
 load('RData/sim_results1.RData')
 output1 <- EstiResults(sim_results1)
