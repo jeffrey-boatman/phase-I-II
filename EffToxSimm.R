@@ -1,6 +1,7 @@
 
 
-### Purpose: Simulate phase I-II trial and follow-up cohort to obtain survival and toxicity outcomes based on dose-finding model proposed by Koopmeiners et al. 
+### Purpose: Simulate phase I-II trial and follow-up cohort to obtain survival and 
+### toxicity outcomes based on dose-finding model proposed by Koopmeiners et al. 
 
 
 # Load libraries
@@ -18,14 +19,14 @@ n_sim <- 1000
 ###indicator of whether or not outcomes are treated as time-to-event variables###
 ###all_data = 0 implies time-to-event, all_data = 1 implies binary outcomes###
 
-all_data <- 0
+all_data <- 1
 
 ###maximum sample size/cohorts###
 
-max_n <- 21
+max_n       <- 21
 cohort_size <- 3
-wait_time <- 2
-dec_n <- 20
+wait_time   <- 2
+dec_n       <- 20
 
 
 ###assign the dose levels###
@@ -35,8 +36,8 @@ dose_level <- 1:4
 ###time in weeks when survival or toxicity is measured###
 
 surv_T <- 24
-tox_T <- 4
-a <- 1 # Shape 1 parameter for the beta distribution to simulate survival and toxicty time
+tox_T  <- 4
+a      <- 1 # Shape 1 parameter for the beta distribution to simulate survival and toxicty time
 
 
 
@@ -58,12 +59,12 @@ true.prob <- function(case){
 		} else if (case == 4) {
 			b0t <- -1; b1t <- 0.5
 			b0s <- -0.05; b1s <- 1.1
-		}
+	}
 		
 	pt <- round(inv.logit(b0t + b1t*0:3), 2)
 	ps <- round(inv.logit(b0s + b1s*0:3), 2)
 	
-return(list(pt = pt, ps = ps))
+  return(list(pt = pt, ps = ps))
 }
 
 
@@ -141,26 +142,25 @@ beta2s_p <- 1/(beta2s_s^2)
 ###calculate p using contour propossed by Thall and Cook###
 
 find_p <- function(p) {
-
-return( ( ((1 - ps_star)/(1 - ps_min))^p + (pt_star/pt_max)^p - 1)^2 )
-
+  (((1 - ps_star)/(1 - ps_min)) ^ p + (pt_star / pt_max) ^ p - 1) ^ 2
 }
 
 p <- optimize(find_p, c(-100,100))$minimum
 
 
 calc_dist <- function(ps, pt) {
-
-dist <- 1 - ( ((1 - ps)/(1 - ps_min))^p + (pt/pt_max)^p )^(1/p)
-
-return(dist)
-
+  dist <- 1 - (((1 - ps) / (1 - ps_min)) ^ p + (pt / pt_max) ^ p ) ^ (1 / p)
+  dist
 }
 
 
 ############## DOSE EXPANSION COHORT #############
 
-# PURPOSE: To simulate binary deaths and toxicity events based on the optimal dose found in the dose-finding algorithm and the true efficacy and toxicity values. Specifically, we simulate a follow-up cohort assuming no inter-trial heterogeneity, lower inter-trial heterogeneity, upper inter-trial heterogeneity, and inter-trial heterogeniety. (We add N(0,0.25) to the logit of the probability of toxcity and efficacy)
+# PURPOSE: To simulate binary deaths and toxicity events based on the optimal dose found in 
+# the dose-finding algorithm and the true efficacy and toxicity values. Specifically, 
+# we simulate a follow-up cohort assuming no inter-trial heterogeneity, lower inter-trial 
+# heterogeneity, upper inter-trial heterogeneity, and inter-trial heterogeniety. (We add N(0,0.25) 
+# to the logit of the probability of toxcity and efficacy)
 
 ## INPUT:
 # optimal_dose: The optimal dose obtained by the dose finding model
@@ -235,8 +235,27 @@ DEC <- function(optimal_dose, case){
 		}
 
 	
-	return(list(d1 = d1, t1 = t1, d2 = d2, t2 = t2, ps.lwr = ps.lwr, pt.lwr = pt.lwr, d3 = d3, t3 = t3, ps.upr = ps.upr, pt.upr = pt.upr, d4 = d4, t4 = t4, ps.ith = ps.ith, pt.ith = pt.ith))
+	return(list(
+	  d1     = d1, 
+	  t1     = t1, 
+	  d2     = d2, 
+	  t2     = t2, 
+	  ps.lwr = ps.lwr, 
+	  pt.lwr = pt.lwr, 
+	  d3     = d3, 
+	  t3     = t3, 
+	  ps.upr = ps.upr, 
+	  pt.upr = pt.upr, 
+	  d4     = d4, 
+	  t4     = t4, 
+	  ps.ith = ps.ith, 
+	  pt.ith = pt.ith))
 }
+
+# for debugging:
+# debug(DEC)
+# DEC(1, 3)
+# DEC(4, 2)
 
 
 ##########################################################
@@ -244,8 +263,9 @@ DEC <- function(optimal_dose, case){
 
 ############## Dose Escalation Clinical Trial #############
 
-SurvEffTox_sim <- function(xxx) {
-
+SurvEffTox_sim <- function(seed, ps, pt, case) {
+  
+  set.seed(seed)
 
 	###starting values for week, dose and max dose###
 
@@ -255,16 +275,19 @@ SurvEffTox_sim <- function(xxx) {
 
 	###vectors for storing data###
 
-	dose <- rep(NA, max_n)  					###dose###
-	surv <- rep(NA, max_n)  					###survival at current time###
-	tox <- rep(NA, max_n)   					###toxicity at current time###
-	surv_time <- rep(NA, max_n)					###survival time###
-	tox_time <- rep(NA, max_n)					###toxicity time###
-	start_week <- cumsum(rexp(n = max_n, rate = 1/wait_time))			###week subject starts on trial - currently 1, 3, 5, etc. - this will change###
+	dose      <- rep(NA, max_n)  ###dose###
+	surv      <- rep(NA, max_n)  ###survival at current time###
+	tox       <- rep(NA, max_n)  ###toxicity at current time###
+	surv_time <- rep(NA, max_n)  ###survival time###
+	tox_time  <- rep(NA, max_n)  ###toxicity time###
+	
+	###week subject starts on trial - currently 1, 3, 5, etc. - this will change###
+	start_week <- cumsum(rexp(n = max_n, rate = 1/wait_time))
 	start_week <- start_week - start_week[1]
-	surv_mult <- rep(NA, max_n)					###weight for survival outcome###
-	tox_mult <- rep(1, max_n)					###weight for toxicity outcome###
-	outcome <- matrix(ncol = 4, nrow = max_n, data = NA)
+
+	surv_mult <- rep(NA, max_n)  ###weight for survival outcome###
+	tox_mult  <- rep(1, max_n)   ###weight for toxicity outcome###
+	outcome   <- matrix(ncol = 4, nrow = max_n, data = NA)
 
 	X <- matrix(data = 0, nrow = max_n, ncol = 4)		###multinomial outcome###
 
@@ -320,14 +343,33 @@ SurvEffTox_sim <- function(xxx) {
 
 		while(jags_works == 0) {
 
-			jags_mod <- try(jags.model(	'survEffTox_revision_unif2.bug', 
-								data = list('scenario' = scenario[1:total_subjects], 'dose' = dose[1:total_subjects], 'N' = total_subjects,
-								'y_s' = surv_time_obs[1:total_subjects], 'h_s' = surv_T, 'y_t' = tox_time_obs[1:total_subjects], 'h_t' = tox_T,  
-								'beta0t_m' = beta0t_m, 'beta1t_m' = beta1t_m, 'beta0s_m' = beta0s_m, 'beta1s_m' = beta1s_m, 'beta2s_m' = beta2s_m, 
-								'beta0t_p' = beta0t_p, 'beta1t_p' = beta1t_p, 'beta0s_p' = beta0s_p, 'beta1s_p' = beta1s_p, 
-								'beta2s_p' = beta2s_p, 'ones' = rep(1, total_subjects)),
-								init = list('beta0t' = -2, 'beta1t' = 1, 'beta0s' = -1, 'beta1s' = 1, 'beta2s' = 0),
-								n.chains = 1, quiet = TRUE))
+			jags_mod <- try(jags.model('survEffTox_revision_unif2.bug', 
+			  data = list(
+            'scenario' = scenario[1:total_subjects], 
+            'dose'     = dose[1:total_subjects], 
+            'N'        = total_subjects,
+            'y_s'      = surv_time_obs[1:total_subjects], 
+            'h_s'      = surv_T, 
+            'y_t'      = tox_time_obs[1:total_subjects], 
+            'h_t'      = tox_T,  
+            'beta0t_m' = beta0t_m, 
+            'beta1t_m' = beta1t_m, 
+            'beta0s_m' = beta0s_m, 
+            'beta1s_m' = beta1s_m, 
+            'beta2s_m' = beta2s_m, 
+            'beta0t_p' = beta0t_p, 
+            'beta1t_p' = beta1t_p, 
+            'beta0s_p' = beta0s_p, 
+            'beta1s_p' = beta1s_p, 
+            'beta2s_p' = beta2s_p, 
+            'ones'     = rep(1, total_subjects)),
+          init = list(
+            'beta0t' = -2, 
+            'beta1t' = 1, 
+            'beta0s' = -1, 
+            'beta1s' = 1, 
+            'beta2s' = 0),
+          n.chains = 1, quiet = TRUE))
 
 			jags_works <- 1*(length(jags_mod) > 1 | attempt == 10)
 
@@ -442,51 +484,77 @@ SurvEffTox_sim <- function(xxx) {
 	if(optimal_dose == 0){s.mb = t.mb = NA;  s.mb_conf = t.mb_conf = rep(NA, 2)}
 	mb <- c(s.mb, s.mb_conf, t.mb, t.mb_conf)
 	
-return(list(dat = dat, death = death, tox = tox, dec = DEC(optimal_dose, case), dose = dose, surv_time_obs = surv_time_obs, tox_time_obs = tox_time_obs, mb = mb))
+  out <- list(
+    dat           = dat, 
+    death         = death, 
+    tox           = tox, 
+    dec           = DEC(optimal_dose, case), 
+    dose          = dose, 
+    surv_time_obs = surv_time_obs, 
+    tox_time_obs  = tox_time_obs, 
+    mb            = mb)
+  out
 
 }
+
+# for debugging
+# debug(SurvEffTox_sim)
+# ps <- true.prob(case = 1)$ps
+# pt <- true.prob(case = 1)$pt
+# SurvEffTox_sim()
 
 
 ## START SIMULATION 
 
-# SET SEEED FOR REPLICATION
-RNGkind("L'Ecuyer-CMRG")
-set.seed(7777442)
-
-# Set number of cores for parallel
-# **Set to one core but can be changed**
-no_cores <- detectCores()-7
+no_cores <- 12
 
 # start.time <- Sys.time()
 # end.time <- Sys.time()
 # end.time-start.time
 
-# Simulation for Case 1
-ps <- true.prob(case = 1)$ps
-pt <- true.prob(case = 1)$pt
-sim_results1 <- mclapply(1:n_sim, SurvEffTox_sim, mc.cores = no_cores, mc.set.seed = FALSE)
+# ~~~ Case 1 Simulation ~~~ ----
+sim_results1 <- mclapply(1:n_sim, 
+  FUN         = SurvEffTox_sim, 
+  ps          = true.prob(case = 1)$ps,
+  pt          = true.prob(case = 1)$pt,
+  case        = 1,
+  mc.cores    = no_cores, 
+  mc.set.seed = FALSE)
 
-# Simulation for Case 2
-ps <- true.prob(case = 2)$ps
-pt <- true.prob(case = 2)$pt
-sim_results2 <- mclapply(1:n_sim, SurvEffTox_sim, mc.cores = no_cores, mc.set.seed = FALSE)
+# ~~~ Case 2 Simulation ~~~ ----
+sim_results2 <- mclapply(1:n_sim, 
+  FUN         = SurvEffTox_sim, 
+  ps          = true.prob(case = 2)$ps,
+  pt          = true.prob(case = 2)$pt,
+  case        = 2,
+  mc.cores    = no_cores, 
+  mc.set.seed = FALSE)
 
-# Simulation for Case 3
-ps <- true.prob(case = 3)$ps
-pt <- true.prob(case = 3)$pt
-sim_results3 <- mclapply(1:n_sim, SurvEffTox_sim, mc.cores = no_cores, mc.set.seed = FALSE)
+# ~~~ Case 3 Simulation ~~~ ----
+sim_results3 <- mclapply(1:n_sim, 
+  FUN         = SurvEffTox_sim, 
+  ps          = true.prob(case = 3)$ps,
+  pt          = true.prob(case = 3)$pt,
+  case        = 3,
+  mc.cores    = no_cores, 
+  mc.set.seed = FALSE)
 
-# Simulation for Case 4
-ps <- true.prob(case = 4)$ps
-pt <- true.prob(case = 4)$pt
-sim_results4 <- mclapply(1:n_sim, SurvEffTox_sim, mc.cores = no_cores, mc.set.seed = FALSE)
+# ~~~ Case 4 Simulation ~~~ ----
+sim_results4 <- mclapply(1:n_sim, 
+  FUN         = SurvEffTox_sim, 
+  ps          = true.prob(case = 4)$ps,
+  pt          = true.prob(case = 4)$pt,
+  case        = 4,
+  mc.cores    = no_cores, 
+  mc.set.seed = FALSE)
 
 
-# Save RData from all cases to Home Drive
-save(sim_results1, file = "/Users/mohammadi02/Desktop/EffToxSIM/sim_results1.RData")
-save(sim_results2, file = "/Users/mohammadi02/Desktop/EffToxSIM/sim_results2.RData")
-save(sim_results3, file = "/Users/mohammadi02/Desktop/EffToxSIM/sim_results3.RData")
-save(sim_results4, file = "/Users/mohammadi02/Desktop/EffToxSIM/sim_results4.RData")
+
+# Save RData from all cases to RData directory
+save(sim_results1, file = "RData/sim_results1.RData")
+save(sim_results2, file = "RData/sim_results2.RData")
+save(sim_results3, file = "RData/sim_results3.RData")
+save(sim_results4, file = "RData/sim_results4.RData")
 
 
 
