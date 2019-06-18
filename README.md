@@ -5,9 +5,13 @@ Estimating toxcitity and efficacy from a phase I-II clinical trial and a follow 
 The code is based on Kusha's plan B MS project.
 
 ***Prior to running the code, the user must create the following directories in the same directory where the code files are located:
+
   'output'
+  
   'RData'
+  
   'tables'
+  
   'plots'
   
  ***note: the R files were designed to run on departmental servers in parallel. The user must update these to run locally or remotely as appropriate.
