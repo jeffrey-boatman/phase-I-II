@@ -1,0 +1,4 @@
+output/*
+RData/*
+tables/*
+.Rhistory

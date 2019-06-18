@@ -1,0 +1,37 @@
+
+
+model {
+
+  for(ii in 1:N) {
+    
+	tox[ii] ~ dbern(p_t[ii])
+	eff[ii] ~ dbern(p_s[ii])
+	
+	p_t[ii] <- 1 / (1 + exp(-(beta0t + beta1t * (dose[ii] - 1))))
+	p_s[ii] <- 1 / (1 + exp(-(beta0s + beta1s * (dose[ii] - 1) + beta2s * (dose[ii] - 1) ^ 2)))
+	
+  }
+      
+  beta0t ~ dnorm(beta0t_m, beta0t_p)
+  # beta1t ~ dnorm(beta1_muT, beta1_tauT)
+  beta1t ~ dgamma(beta1t_r, beta1t_lambda)
+  
+  beta0s ~ dnorm(beta0s_m, beta0s_p)
+  # beta_1E ~ dnorm(beta1_muE, beta1_tauE)
+  beta1s ~ dgamma(beta1s_r, beta1s_lambda)
+  beta2s ~ dnorm(beta2s_m, beta2s_p)
+
+
+  
+
+	/* ####probability of toxicity by group###  */
+
+	for(j in 1:4) {
+
+		ps_est[j] <- 1 / (1 + exp( -(beta0s + beta1s * (j - 1) + beta2s * (j - 1)^2) ) );
+		pt_est[j] <- 1 / (1 + exp( -(beta0t + beta1t * (j - 1))));
+
+
+	}
+
+}
