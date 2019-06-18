@@ -79,7 +79,7 @@ types_title <- c(
 
 # ~ toxicity plots ~ ----
 for(type in types) {
-  pdf(paste0("../plots/tox-", type, ".pdf"), height = 8, width = 12)
+  pdf(paste0("./plots/tox-", type, ".pdf"), height = 8, width = 12)
   temp_title <- paste0("Toxicity, ", types_title[match(type, types)])
   p1 <- tox %>% filter(data_gen_type == type) %>%
     ggplot(mapping = aes(x = estimator, y  = abs(bias), fill = estimator)) +  
@@ -147,7 +147,7 @@ eff <- eff %>%
 #   ordered = TRUE)
 
 for(type in c("NE", "ITH", "HTLE")) {
-  pdf(paste0("../plots/eff-", type, ".pdf"), height = 8, width = 12)
+  pdf(paste0("./plots/eff-", type, ".pdf"), height = 8, width = 12)
   temp_title <- paste0("Efficacy, ", types_title[match(type, types)])
   p1 <- eff %>% filter(data_gen_type == type) %>%
     ggplot(mapping = aes(x = estimator, y  = abs(bias), fill = estimator)) +  
