@@ -1,0 +1,48 @@
+model {
+
+  for(ii in 1:n_esc) {
+    
+	y_t_esc[ii] ~ dbern(p_t_esc[ii])
+	y_s_esc[ii] ~ dbern(p_s_esc[ii])
+	
+	p_t_esc[ii] <- 1 / (1 + exp(-(beta_0T + beta_1T * (dose[ii] - 1))))
+	p_s_esc[ii] <- 1 / (1 + exp(-(beta_0E + beta_1E * (dose[ii] - 1) + beta_2E * (dose[ii] - 1) ^ 2)))
+	
+  }
+  
+  beta_0T ~ dnorm(beta0_muT, beta0_tauT);
+  # beta_1T ~ dnorm(beta1_muT, beta1_tauT);
+  beta_1T ~ dgamma(beta1_shapeT, beta1_rateT)
+
+  beta_0E ~ dnorm(beta0_muE, beta0_tauE);
+  #beta_1E ~ dnorm(beta1_muE, beta1_tauE);
+  beta_1E ~ dgamma(beta1_shapeE, beta1_rateE)
+  beta_2E ~ dnorm(beta2_muE, beta2_tauE);
+  
+  y_t_exp ~ dbin(tox, n_exp)
+  y_s_exp ~ dbin(eff, n_exp)
+  
+  tox ~ dbeta(a_tox, b_tox)
+  eff ~ dbeta(a_eff, b_eff)
+  
+  mu_tox <- 1 / (1 + exp(-(beta_0T + beta_1T * (optimal_dose - 1))))
+  mu_eff <- 1 / (1 + exp(-(beta_0E + beta_1E * (optimal_dose - 1) + beta_2E * (optimal_dose - 1) ^ 2)))
+  
+  a_tox <- (1 - gamma_tox ^ 2) * mu_tox / gamma_tox ^ 2
+  b_tox <- (1 - gamma_tox ^ 2) * (1 - mu_tox) / gamma_tox ^ 2 
+  
+  a_eff <- (1 - gamma_eff ^ 2) * mu_eff / gamma_eff ^ 2
+  b_eff <- (1 - gamma_eff ^ 2) * (1 - mu_eff) / gamma_eff ^ 2
+
+  gamma_tox <- 1 / tautox
+  gamma_eff <- 1 / taueff 
+  
+  tautox <- tau_temtox * step(u_tox - tau_temtox) + spike_tox * step(tau_temtox - u_tox)
+  d_tox <- (u_tox - 1) / nu_tox + 1
+  tau_temtox ~ dunif(1, d_tox)
+
+  taueff <- tau_temeff * step(u_eff - tau_temeff) + spike_eff * step(tau_temeff - u_eff)
+  d_eff <- (u_eff - 1) / nu_eff + 1
+  tau_temeff ~ dunif(1, d_eff)
+  
+}
